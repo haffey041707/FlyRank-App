@@ -8,8 +8,10 @@ import TaskFormModal from './components/TaskFormModal'
 import ConfirmDialog from './components/ConfirmDialog'
 import Notice from './components/ui/Notice'
 import { useTasks } from './hooks/useTasks'
+import { useAnnouncer } from './hooks/useAnnouncer'
 import { DEFAULT_FILTERS } from './lib/constants'
 import { filterTasks, getStats, sortTasks } from './lib/taskUtils'
+import { sanitizeDraft } from './lib/validation'
 
 export default function App() {
   const {
@@ -31,7 +33,7 @@ export default function App() {
 
   // Nothing on screen changes when a task is added or deleted except the list
   // itself, which a screen reader will not read unprompted. This narrates it.
-  const [announcement, setAnnouncement] = useState('')
+  const [announcement, announce] = useAnnouncer()
 
   const showRecovery =
     !recoveryDismissed && (recovery.reset || recovery.dropped > 0)
@@ -48,48 +50,56 @@ export default function App() {
 
   const handleSubmit = useCallback(
     (draft) => {
+      // Announce what actually gets stored. The raw draft still carries the
+      // user's untrimmed spacing, which is not what ends up on the card.
+      const { title } = sanitizeDraft(draft)
       if (formState.task) {
         updateTask(formState.task.id, draft)
-        setAnnouncement(`Task updated: ${draft.title}`)
+        announce(`Task updated: ${title || formState.task.title}`)
       } else {
         addTask(draft)
-        setAnnouncement(`Task added: ${draft.title}`)
+        announce(`Task added: ${title}`)
       }
       closeForm()
     },
-    [formState.task, updateTask, addTask, closeForm],
+    [formState.task, updateTask, addTask, closeForm, announce],
   )
 
+  // Takes the whole task rather than an id: the card already has it, which
+  // keeps this callback off the `tasks` array. Depending on `tasks` here gave
+  // it a new identity on every mutation and defeated memoisation downstream.
   const handleToggle = useCallback(
-    (id) => {
-      const task = tasks.find((candidate) => candidate.id === id)
-      toggleTask(id)
-      if (task) {
-        setAnnouncement(
-          `${task.title} marked ${task.completed ? 'active' : 'complete'}`,
-        )
-      }
+    (task) => {
+      toggleTask(task.id)
+      announce(`${task.title} marked ${task.completed ? 'active' : 'complete'}`)
     },
-    [tasks, toggleTask],
+    [toggleTask, announce],
   )
 
   const handleConfirmDelete = useCallback(() => {
     if (taskPendingDelete) {
       deleteTask(taskPendingDelete.id)
-      setAnnouncement(`Task deleted: ${taskPendingDelete.title}`)
+      announce(`Task deleted: ${taskPendingDelete.title}`)
     }
     setTaskPendingDelete(null)
-  }, [taskPendingDelete, deleteTask])
+  }, [taskPendingDelete, deleteTask, announce])
 
   const handleConfirmClear = useCallback(() => {
     clearCompleted()
-    setAnnouncement(
+    announce(
       `Cleared ${stats.completed} completed ${stats.completed === 1 ? 'task' : 'tasks'}`,
     )
     setClearConfirmOpen(false)
-  }, [clearCompleted, stats.completed])
+  }, [clearCompleted, stats.completed, announce])
 
   const resetFilters = useCallback(() => setFilters(DEFAULT_FILTERS), [])
+
+  // Stable identities so the memoised cards and their siblings are not handed
+  // a fresh function on every render.
+  const openClearConfirm = useCallback(() => setClearConfirmOpen(true), [])
+  const closeClearConfirm = useCallback(() => setClearConfirmOpen(false), [])
+  const cancelDelete = useCallback(() => setTaskPendingDelete(null), [])
+  const dismissRecovery = useCallback(() => setRecoveryDismissed(true), [])
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -104,9 +114,12 @@ export default function App() {
 
       <Header onCreate={openCreateForm} />
 
+      {/* Where a dialog sends focus when whatever opened it no longer exists,
+          e.g. after deleting the task whose delete button opened the dialog. */}
       <main
         id="main-content"
         tabIndex={-1}
+        data-modal-focus-fallback
         className="mx-auto max-w-6xl space-y-5 px-4 py-6 pb-20 outline-none sm:px-6 sm:py-8 lg:px-8"
       >
         {storageWriteFailed && (
@@ -121,7 +134,7 @@ export default function App() {
           <Notice
             tone="warning"
             title="Some saved data could not be read"
-            onDismiss={() => setRecoveryDismissed(true)}
+            onDismiss={dismissRecovery}
           >
             {recovery.reset
               ? 'The saved task list was unreadable, so TaskFlow started fresh.'
@@ -138,7 +151,7 @@ export default function App() {
           onChange={setFilters}
           stats={stats}
           resultCount={visibleTasks.length}
-          onClearCompleted={() => setClearConfirmOpen(true)}
+          onClearCompleted={openClearConfirm}
         />
 
         {tasks.length === 0 ? (
@@ -178,7 +191,7 @@ export default function App() {
         }
         confirmLabel="Delete task"
         onConfirm={handleConfirmDelete}
-        onClose={() => setTaskPendingDelete(null)}
+        onClose={cancelDelete}
       />
 
       <ConfirmDialog
@@ -189,7 +202,7 @@ export default function App() {
         }. This cannot be undone.`}
         confirmLabel="Clear completed"
         onConfirm={handleConfirmClear}
-        onClose={() => setClearConfirmOpen(false)}
+        onClose={closeClearConfirm}
       />
     </div>
   )

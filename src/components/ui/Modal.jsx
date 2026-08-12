@@ -105,7 +105,18 @@ export default function Modal({
       document.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = previousOverflow
       setEntered(false)
-      returnFocusRef.current?.focus()
+
+      // The opener is often destroyed by the very action the dialog confirmed:
+      // deleting a task removes that task's delete button. focus() on a
+      // detached node silently does nothing and focus falls to <body>, which
+      // sends keyboard users back to the top of the page. Fall back to the
+      // element the page nominates instead.
+      const opener = returnFocusRef.current
+      if (opener?.isConnected) {
+        opener.focus()
+      } else {
+        document.querySelector('[data-modal-focus-fallback]')?.focus()
+      }
     }
   }, [open, focusableItems])
 

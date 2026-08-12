@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { memo, useId } from 'react'
 import Badge from './ui/Badge'
 import IconButton from './ui/IconButton'
 import { CalendarIcon, CheckIcon, PencilIcon, TrashIcon } from './ui/Icons'
@@ -6,7 +6,7 @@ import { cx } from '../lib/cx'
 import { PRIORITIES } from '../lib/constants'
 import { formatDueDate, isOverdue } from '../lib/taskUtils'
 
-export default function TaskCard({ task, onToggle, onEdit, onDelete }) {
+function TaskCard({ task, onToggle, onEdit, onDelete }) {
   const titleId = useId()
   const priority = PRIORITIES[task.priority]
   const overdue = isOverdue(task)
@@ -36,7 +36,7 @@ export default function TaskCard({ task, onToggle, onEdit, onDelete }) {
           type="button"
           role="checkbox"
           aria-checked={task.completed}
-          onClick={() => onToggle(task.id)}
+          onClick={() => onToggle(task)}
           aria-label={
             task.completed ? `Mark "${task.title}" active` : `Mark "${task.title}" complete`
           }
@@ -115,3 +115,11 @@ export default function TaskCard({ task, onToggle, onEdit, onDelete }) {
     </article>
   )
 }
+
+/**
+ * Memoised because this is the only component that scales with the data: every
+ * search keystroke re-renders App and the list, and without this each card
+ * re-renders too. Its three handlers are kept stable in App so the comparison
+ * can actually succeed.
+ */
+export default memo(TaskCard)
