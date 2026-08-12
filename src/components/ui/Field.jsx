@@ -7,42 +7,85 @@ const CONTROL =
   'focus:ring-2 focus:ring-sky-500 focus:outline-none ' +
   'dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-700 dark:placeholder:text-slate-500'
 
+const INVALID = 'ring-rose-400 focus:ring-rose-500 dark:ring-rose-500/60'
 const LABEL = 'block text-sm font-medium text-slate-700 dark:text-slate-300'
 
-/** Label + control + optional error message, wired together with a generated id. */
-export function Field({ label, error, hint, children }) {
+/**
+ * Label + control + message, wired together with a generated id.
+ *
+ * The render prop hands back `describedBy` so the control can point
+ * `aria-describedby` at whichever message is currently rendered -- screen
+ * readers then announce the error or hint with the field, not adrift from it.
+ */
+export function Field({ label, error, hint, warning, counter, children }) {
   const id = useId()
+  const messageId = `${id}-message`
+  const message = error || warning || hint
+  const showCounter = counter && counter.max - counter.value <= counter.max * 0.2
 
   return (
     <div className="space-y-1.5">
-      <label htmlFor={id} className={LABEL}>
-        {label}
-      </label>
-      {children({ id, invalid: Boolean(error) })}
-      {error ? (
-        <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>
-      ) : hint ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">{hint}</p>
-      ) : null}
+      <div className="flex items-baseline justify-between gap-3">
+        <label htmlFor={id} className={LABEL}>
+          {label}
+        </label>
+        {showCounter && (
+          <span
+            className={cx(
+              'text-xs tabular-nums',
+              counter.value > counter.max
+                ? 'font-medium text-rose-600 dark:text-rose-400'
+                : 'text-slate-400 dark:text-slate-500',
+            )}
+          >
+            {counter.value}/{counter.max}
+          </span>
+        )}
+      </div>
+
+      {children({
+        id,
+        invalid: Boolean(error),
+        describedBy: message ? messageId : undefined,
+      })}
+
+      {message && (
+        <p
+          id={messageId}
+          role={error ? 'alert' : undefined}
+          className={cx(
+            'text-sm',
+            error
+              ? 'text-rose-600 dark:text-rose-400'
+              : warning
+                ? 'text-amber-600 dark:text-amber-400'
+                : 'text-slate-500 dark:text-slate-400',
+          )}
+        >
+          {message}
+        </p>
+      )}
     </div>
   )
 }
 
-export function Input({ invalid, className, ...props }) {
+export function Input({ invalid, describedBy, className, ...props }) {
   return (
     <input
-      className={cx(CONTROL, invalid && 'ring-rose-400 focus:ring-rose-500', className)}
+      className={cx(CONTROL, invalid && INVALID, className)}
       aria-invalid={invalid || undefined}
+      aria-describedby={describedBy}
       {...props}
     />
   )
 }
 
-export function Textarea({ invalid, className, ...props }) {
+export function Textarea({ invalid, describedBy, className, ...props }) {
   return (
     <textarea
-      className={cx(CONTROL, 'resize-y', invalid && 'ring-rose-400 focus:ring-rose-500', className)}
+      className={cx(CONTROL, 'resize-y', invalid && INVALID, className)}
       aria-invalid={invalid || undefined}
+      aria-describedby={describedBy}
       {...props}
     />
   )

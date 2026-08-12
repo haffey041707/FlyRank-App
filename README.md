@@ -58,6 +58,7 @@ FlyRank-App/
 │   │   │   ├── Field.jsx       # Field wrapper + Input / Textarea / Select
 │   │   │   ├── Icons.jsx       # Inline SVG icon set
 │   │   │   ├── Modal.jsx       # Portal dialog: escape, scroll lock, focus return
+│   │   │   ├── Notice.jsx      # Storage / data-recovery banner
 │   │   │   └── SegmentedControl.jsx
 │   │   ├── ConfirmDialog.jsx   # Reused by delete and clear-completed
 │   │   ├── EmptyState.jsx      # "No tasks yet" and "no filter matches"
@@ -75,7 +76,8 @@ FlyRank-App/
 │   ├── lib/
 │   │   ├── constants.js        # Priority definitions, filter options, storage key
 │   │   ├── cx.js               # Class name joiner
-│   │   └── taskUtils.js        # Filter, sort, stats, dates, validation
+│   │   ├── taskUtils.js        # Filter, sort, stats, dates, storage normalising
+│   │   └── validation.js       # Field rules, text cleaning, date checks
 │   ├── App.jsx                 # Composes the dashboard, owns UI state
 │   ├── main.jsx
 │   └── index.css
@@ -85,6 +87,40 @@ FlyRank-App/
 ├── .gitignore
 └── package.json
 ```
+
+## Validation and resilience
+
+All validation rules live in `lib/validation.js` and are shared by the form and
+the storage reader, so a value the form rejects is also a value that cannot
+enter the app through storage.
+
+**Form** — the submit button is disabled while the draft is invalid, and each
+field explains its own problem. Errors appear only after you leave a field or
+try to submit, so an untouched form is never pre-scolded. A title is required
+and must survive trimming; notes are optional. Due dates are optional, and a
+past date warns without blocking, since logging something already late is
+legitimate.
+
+**Titles and notes** are trimmed and cleaned before being stored: whitespace
+collapses, control characters are stripped, and zero-width characters are
+removed. `"​"` looks blank but survives `String.prototype.trim()`, so a title
+made only of it would otherwise pass as valid.
+
+**Dates** are checked as real calendar dates, not just against a format regex.
+`2026-02-30` matches `\d{4}-\d{2}-\d{2}` but is not a real day, and `Date` would
+silently roll it forward to March 2. Values are round-tripped through `Date` and
+compared back, then bounded to 1970–2099.
+
+**Storage** is treated as untrusted input, because it is user-writable. Anything
+that is not a well-formed list loads as an empty list, individual malformed
+records are dropped while the rest are kept, and repairable fields are repaired
+rather than discarded. The user is told when this happens instead of silently
+losing rows. A first visit with no stored key is not treated as corruption.
+
+**Failed writes are surfaced.** `setItem` throws on a full quota and in Safari
+private mode. Swallowing that leaves someone working in an app that has quietly
+stopped saving, so a banner says so explicitly and the app keeps running from
+memory.
 
 ## How it fits together
 

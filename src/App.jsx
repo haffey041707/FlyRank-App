@@ -6,18 +6,31 @@ import TaskList from './components/TaskList'
 import EmptyState from './components/EmptyState'
 import TaskFormModal from './components/TaskFormModal'
 import ConfirmDialog from './components/ConfirmDialog'
+import Notice from './components/ui/Notice'
 import { useTasks } from './hooks/useTasks'
 import { DEFAULT_FILTERS } from './lib/constants'
 import { filterTasks, getStats, sortTasks } from './lib/taskUtils'
 
 export default function App() {
-  const { tasks, addTask, updateTask, deleteTask, toggleTask, clearCompleted } =
-    useTasks()
+  const {
+    tasks,
+    addTask,
+    updateTask,
+    deleteTask,
+    toggleTask,
+    clearCompleted,
+    recovery,
+    storageWriteFailed,
+  } = useTasks()
 
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [formState, setFormState] = useState({ open: false, task: null })
   const [taskPendingDelete, setTaskPendingDelete] = useState(null)
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false)
+  const [recoveryDismissed, setRecoveryDismissed] = useState(false)
+
+  const showRecovery =
+    !recoveryDismissed && (recovery.reset || recovery.dropped > 0)
 
   const stats = useMemo(() => getStats(tasks), [tasks])
   const visibleTasks = useMemo(
@@ -58,6 +71,28 @@ export default function App() {
       <Header onCreate={openCreateForm} />
 
       <main className="mx-auto max-w-6xl space-y-5 px-4 py-6 pb-20 sm:px-6 sm:py-8 lg:px-8">
+        {storageWriteFailed && (
+          <Notice tone="danger" title="Changes are not being saved">
+            This browser is refusing to store data, so anything you add now will
+            be lost when you close the tab. Private browsing or a full storage
+            quota is the usual cause.
+          </Notice>
+        )}
+
+        {showRecovery && (
+          <Notice
+            tone="warning"
+            title="Some saved data could not be read"
+            onDismiss={() => setRecoveryDismissed(true)}
+          >
+            {recovery.reset
+              ? 'The saved task list was unreadable, so TaskFlow started fresh.'
+              : `${recovery.dropped} saved ${
+                  recovery.dropped === 1 ? 'record was' : 'records were'
+                } incomplete and could not be restored. Everything else loaded normally.`}
+          </Notice>
+        )}
+
         <StatsGrid stats={stats} />
 
         <FilterBar

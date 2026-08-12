@@ -1,15 +1,28 @@
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import { useLocalStorage } from './useLocalStorage'
 import { STORAGE_KEY } from '../lib/constants'
-import { createTask, normalizeTasks } from '../lib/taskUtils'
+import { applyDraft, createTask, normalizeTasks } from '../lib/taskUtils'
 
 /**
  * Owns the task collection and every mutation applied to it.
  * Persistence is handled by useLocalStorage, so components never touch storage.
+ *
+ * Also reports how the initial load went (`recovery`) and whether saving is
+ * currently failing (`storageWriteFailed`), so the UI can warn instead of
+ * quietly losing the user's work.
  */
 export function useTasks() {
-  const [tasks, setTasks] = useLocalStorage(STORAGE_KEY, [], {
-    deserialize: normalizeTasks,
+  // Populated inside the lazy state initializer below. Writing a ref there runs
+  // exactly once per mount and is idempotent, so StrictMode's double-invoke
+  // produces the same values.
+  const recoveryRef = useRef({ dropped: 0, reset: false })
+
+  const [tasks, setTasks, status] = useLocalStorage(STORAGE_KEY, [], {
+    deserialize: (parsed) => {
+      const { tasks: restored, dropped, reset } = normalizeTasks(parsed)
+      recoveryRef.current = { dropped, reset }
+      return restored
+    },
   })
 
   const addTask = useCallback(
@@ -20,9 +33,9 @@ export function useTasks() {
   )
 
   const updateTask = useCallback(
-    (id, changes) => {
+    (id, draft) => {
       setTasks((current) =>
-        current.map((task) => (task.id === id ? { ...task, ...changes } : task)),
+        current.map((task) => (task.id === id ? applyDraft(task, draft) : task)),
       )
     },
     [setTasks],
@@ -56,5 +69,14 @@ export function useTasks() {
     setTasks((current) => current.filter((task) => !task.completed))
   }, [setTasks])
 
-  return { tasks, addTask, updateTask, deleteTask, toggleTask, clearCompleted }
+  return {
+    tasks,
+    addTask,
+    updateTask,
+    deleteTask,
+    toggleTask,
+    clearCompleted,
+    recovery: recoveryRef.current,
+    storageWriteFailed: status.writeFailed,
+  }
 }
