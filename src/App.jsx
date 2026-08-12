@@ -29,6 +29,10 @@ export default function App() {
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false)
   const [recoveryDismissed, setRecoveryDismissed] = useState(false)
 
+  // Nothing on screen changes when a task is added or deleted except the list
+  // itself, which a screen reader will not read unprompted. This narrates it.
+  const [announcement, setAnnouncement] = useState('')
+
   const showRecovery =
     !recoveryDismissed && (recovery.reset || recovery.dropped > 0)
 
@@ -46,31 +50,65 @@ export default function App() {
     (draft) => {
       if (formState.task) {
         updateTask(formState.task.id, draft)
+        setAnnouncement(`Task updated: ${draft.title}`)
       } else {
         addTask(draft)
+        setAnnouncement(`Task added: ${draft.title}`)
       }
       closeForm()
     },
     [formState.task, updateTask, addTask, closeForm],
   )
 
+  const handleToggle = useCallback(
+    (id) => {
+      const task = tasks.find((candidate) => candidate.id === id)
+      toggleTask(id)
+      if (task) {
+        setAnnouncement(
+          `${task.title} marked ${task.completed ? 'active' : 'complete'}`,
+        )
+      }
+    },
+    [tasks, toggleTask],
+  )
+
   const handleConfirmDelete = useCallback(() => {
-    if (taskPendingDelete) deleteTask(taskPendingDelete.id)
+    if (taskPendingDelete) {
+      deleteTask(taskPendingDelete.id)
+      setAnnouncement(`Task deleted: ${taskPendingDelete.title}`)
+    }
     setTaskPendingDelete(null)
   }, [taskPendingDelete, deleteTask])
 
   const handleConfirmClear = useCallback(() => {
     clearCompleted()
+    setAnnouncement(
+      `Cleared ${stats.completed} completed ${stats.completed === 1 ? 'task' : 'tasks'}`,
+    )
     setClearConfirmOpen(false)
-  }, [clearCompleted])
+  }, [clearCompleted, stats.completed])
 
   const resetFilters = useCallback(() => setFilters(DEFAULT_FILTERS), [])
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* First thing in the tab order: lets keyboard users jump the header
+          instead of tabbing through it on every page load. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
+
       <Header onCreate={openCreateForm} />
 
-      <main className="mx-auto max-w-6xl space-y-5 px-4 py-6 pb-20 sm:px-6 sm:py-8 lg:px-8">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="mx-auto max-w-6xl space-y-5 px-4 py-6 pb-20 outline-none sm:px-6 sm:py-8 lg:px-8"
+      >
         {storageWriteFailed && (
           <Notice tone="danger" title="Changes are not being saved">
             This browser is refusing to store data, so anything you add now will
@@ -110,12 +148,18 @@ export default function App() {
         ) : (
           <TaskList
             tasks={visibleTasks}
-            onToggle={toggleTask}
+            onToggle={handleToggle}
             onEdit={openEditForm}
             onDelete={setTaskPendingDelete}
           />
         )}
       </main>
+
+      {/* Polite: task changes are worth reporting but should never cut off
+          whatever the user is currently listening to. */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {announcement}
+      </div>
 
       <TaskFormModal
         open={formState.open}

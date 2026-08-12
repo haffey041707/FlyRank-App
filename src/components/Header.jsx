@@ -10,23 +10,31 @@ function todayLabel() {
 }
 
 export default function Header({ onCreate }) {
+  const today = new Date()
+
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80">
+    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/85 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/85">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-white shadow-sm">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm">
             <SparkIcon className="h-5 w-5" />
           </span>
           <div className="min-w-0">
             <h1 className="text-lg font-semibold tracking-tight text-slate-900 sm:text-xl dark:text-white">
               TaskFlow
             </h1>
-            <p className="truncate text-sm text-slate-500 dark:text-slate-400">
+            {/* A <time> element gives the date machine-readable meaning. */}
+            <time
+              dateTime={today.toISOString().slice(0, 10)}
+              className="block truncate text-sm text-slate-600 dark:text-slate-400"
+            >
               {todayLabel()}
-            </p>
+            </time>
           </div>
         </div>
 
+        {/* The label is visually hidden on small screens but still names the
+            button, so it never becomes an unlabelled icon. */}
         <Button onClick={onCreate} className="shrink-0">
           <PlusIcon className="h-4 w-4" />
           <span className="max-sm:sr-only">New task</span>

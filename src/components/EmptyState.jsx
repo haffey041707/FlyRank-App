@@ -22,14 +22,17 @@ export default function EmptyState({ variant, onAction }) {
 
   return (
     <div className="animate-rise rounded-xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center dark:border-slate-700 dark:bg-slate-900/50">
-      <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+      <span
+        aria-hidden="true"
+        className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+      >
         <Icon className="h-6 w-6" />
       </span>
 
       <h3 className="mt-4 text-base font-semibold text-slate-900 dark:text-white">
         {title}
       </h3>
-      <p className="mx-auto mt-1.5 max-w-sm text-sm text-slate-500 dark:text-slate-400">
+      <p className="mx-auto mt-1.5 max-w-sm text-sm text-slate-600 dark:text-slate-400">
         {body}
       </p>
 
@@ -38,7 +41,7 @@ export default function EmptyState({ variant, onAction }) {
         onClick={onAction}
         className="mt-6"
       >
-        {ActionIcon && <ActionIcon className="h-4 w-4" />}
+        {ActionIcon && <ActionIcon aria-hidden="true" className="h-4 w-4" />}
         {action.label}
       </Button>
     </div>

@@ -56,10 +56,11 @@ FlyRank-App/
 │   │   │   ├── Badge.jsx
 │   │   │   ├── Button.jsx
 │   │   │   ├── Field.jsx       # Field wrapper + Input / Textarea / Select
+│   │   │   ├── IconButton.jsx  # Icon-only button; `label` is required
 │   │   │   ├── Icons.jsx       # Inline SVG icon set
-│   │   │   ├── Modal.jsx       # Portal dialog: escape, scroll lock, focus return
+│   │   │   ├── Modal.jsx       # Portal dialog: focus trap, escape, focus return
 │   │   │   ├── Notice.jsx      # Storage / data-recovery banner
-│   │   │   └── SegmentedControl.jsx
+│   │   │   └── SegmentedControl.jsx  # ARIA radiogroup w/ roving tabindex
 │   │   ├── ConfirmDialog.jsx   # Reused by delete and clear-completed
 │   │   ├── EmptyState.jsx      # "No tasks yet" and "no filter matches"
 │   │   ├── FilterBar.jsx       # Search + status + priority + clear completed
@@ -87,6 +88,40 @@ FlyRank-App/
 ├── .gitignore
 └── package.json
 ```
+
+## Accessibility
+
+Built to WCAG 2.1 AA and verified against the running app rather than by eye.
+
+**Structure** — real landmarks (`header`, `main`, `search`, `ul`/`li`, `article`,
+`time`), one `h1`, and visually hidden `h2` headings for each section so the
+outline never skips a level. Every task `article` is labelled by its own title.
+
+**Keyboard** — a skip link is the first tab stop. The status and priority
+pickers follow the ARIA radiogroup pattern: one tab stop with arrow keys, Home
+and End moving between options, rather than a tab stop per option. Dialogs trap
+Tab and Shift+Tab, take focus on open, close on Escape, and return focus to
+whatever opened them.
+
+**Focus** — a `:focus-visible` baseline in `index.css` means no control can ever
+end up without a visible ring, including ones added later. Windows High Contrast
+Mode falls back to the system focus colour.
+
+**Names** — icon-only buttons go through `IconButton`, which requires a `label`,
+so an unlabelled icon button is not expressible. Per-task actions are named for
+their task (`Edit "Prepare the board deck"`), because ten identical "Edit task"
+buttons tell a screen-reader user nothing about which one they are on.
+
+**Announcements** — form errors carry `role="alert"` and are tied to their input
+with `aria-describedby` and `aria-invalid`. A disabled submit button describes
+why it is disabled. Adding, editing, completing, deleting, and clearing tasks
+are announced through a polite live region, as is the filtered result count.
+Storage failures are assertive; recovery summaries are polite.
+
+**Contrast** — all text clears 4.5:1 in both themes, measured from computed
+styles. Colour is never the only signal: priority is spelled out in each badge,
+and completion is announced as text rather than conveyed by strike-through
+alone.
 
 ## Validation and resilience
 

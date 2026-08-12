@@ -2,7 +2,13 @@ import Modal from './ui/Modal'
 import Button from './ui/Button'
 import { AlertIcon } from './ui/Icons'
 
-/** Reused for both the single-task delete and the clear-completed action. */
+/**
+ * Reused for both the single-task delete and the clear-completed action.
+ *
+ * The message is passed as the dialog's `description`, so it is both shown once
+ * and announced via aria-describedby when the dialog opens. The destructive
+ * button takes initial focus, and Escape or Cancel backs out.
+ */
 export default function ConfirmDialog({
   open,
   title,
@@ -12,15 +18,22 @@ export default function ConfirmDialog({
   onClose,
 }) {
   return (
-    <Modal open={open} onClose={onClose} title={title} size="sm">
-      <div className="flex gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={title}
+      description={message}
+      size="sm"
+      icon={
+        <span
+          aria-hidden="true"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300"
+        >
           <AlertIcon className="h-5 w-5" />
         </span>
-        <p className="pt-2 text-sm text-slate-600 dark:text-slate-300">{message}</p>
-      </div>
-
-      <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      }
+    >
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button variant="secondary" onClick={onClose}>
           Cancel
         </Button>

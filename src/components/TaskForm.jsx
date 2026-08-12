@@ -25,6 +25,7 @@ export default function TaskForm({ task, onSubmit, onCancel }) {
   const [touched, setTouched] = useState({})
   const [submitAttempted, setSubmitAttempted] = useState(false)
   const blockedId = useId()
+  const priorityLabelId = useId()
 
   const errors = validateDraft(values)
   const firstError = errors.title ?? errors.notes ?? errors.priority ?? errors.dueDate
@@ -92,11 +93,14 @@ export default function TaskForm({ task, onSubmit, onCancel }) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <span className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+          <span
+            id={priorityLabelId}
+            className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
             Priority
           </span>
           <SegmentedControl
-            label="Priority"
+            labelledBy={priorityLabelId}
             options={PRIORITY_OPTIONS}
             value={values.priority}
             onChange={(value) => setField('priority', value)}
@@ -146,8 +150,11 @@ export default function TaskForm({ task, onSubmit, onCancel }) {
       </p>
 
       <div className="flex flex-col-reverse items-stretch gap-2 pt-2 sm:flex-row sm:items-center sm:justify-end">
+        {/* Visual echo only -- the field's own role="alert" already announced
+            the specific problem, and the sr-only region below names it again
+            for the disabled button. Repeating it here would be a third read. */}
         {isBlocked && submitAttempted && (
-          <p className="mr-auto text-sm text-rose-600 dark:text-rose-400">
+          <p aria-hidden="true" className="mr-auto text-sm text-rose-700 dark:text-rose-400">
             Fix the highlighted field to continue.
           </p>
         )}

@@ -2,20 +2,23 @@ import { cx } from '../../lib/cx'
 
 const BASE =
   'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition duration-150 ' +
-  'focus-visible:outline-2 focus-visible:outline-offset-2 ' +
-  'disabled:pointer-events-none disabled:opacity-50'
+  'disabled:cursor-not-allowed'
 
 const VARIANTS = {
   primary:
-    'bg-sky-600 text-white shadow-sm hover:bg-sky-500 active:bg-sky-700 focus-visible:outline-sky-600',
+    'bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:bg-brand-800 ' +
+    'disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none ' +
+    'dark:disabled:bg-slate-800 dark:disabled:text-slate-500',
   secondary:
-    'bg-white text-slate-700 ring-1 ring-slate-300 ring-inset hover:bg-slate-50 focus-visible:outline-slate-400 ' +
-    'dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-700',
+    'bg-white text-slate-700 ring-1 ring-slate-300 ring-inset hover:bg-slate-50 hover:text-slate-900 ' +
+    'disabled:text-slate-400 ' +
+    'dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-600 dark:hover:bg-slate-700 dark:hover:text-white',
   danger:
-    'bg-rose-600 text-white shadow-sm hover:bg-rose-500 active:bg-rose-700 focus-visible:outline-rose-600',
+    'bg-rose-600 text-white shadow-sm hover:bg-rose-700 active:bg-rose-800 ' +
+    'disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none',
   ghost:
-    'text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-slate-400 ' +
-    'dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100',
+    'text-slate-600 hover:bg-slate-100 hover:text-slate-900 ' +
+    'dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
 }
 
 const SIZES = {
@@ -24,6 +27,11 @@ const SIZES = {
   icon: 'h-9 w-9',
 }
 
+/**
+ * Disabled buttons keep a solid grey fill rather than a faded primary. An
+ * opacity wash on a coloured button drops it below contrast minimums and reads
+ * as "loading" rather than "not available yet".
+ */
 export default function Button({
   variant = 'primary',
   size = 'md',
