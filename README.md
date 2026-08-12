@@ -43,6 +43,23 @@ The dev server prints a local URL (default <http://localhost:5173>).
 | `npm run build`   | Produce a production build in `dist/`     |
 | `npm run preview` | Serve the production build locally        |
 | `npm run lint`    | Lint the project with oxlint              |
+| `npm test`        | Run the test suite once (Vitest)          |
+| `npm run test:watch` | Re-run tests on change                 |
+
+## Tests
+
+Vitest with React Testing Library and jsdom. 112 tests across three files:
+
+| File | Covers |
+| ---- | ------ |
+| `src/lib/validation.test.js` | Title cleaning, calendar-date checks, draft validation and sanitising |
+| `src/lib/taskUtils.test.js`  | Storage normalising, filtering, sorting, statistics |
+| `src/App.test.jsx`           | The app end to end: add, validate, complete, delete, filter, restore, recover |
+
+Tests drive the app the way a user does — by role and label, through
+`user-event` — so they exercise the same accessible names the app exposes to
+screen readers. A test that cannot find a button by its label is telling you
+something real.
 
 ## Project structure
 
