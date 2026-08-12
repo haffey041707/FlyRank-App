@@ -106,7 +106,7 @@ describe('empty title validation', () => {
   it.each([
     ['spaces only', '   '],
     ['a tab', '\t'],
-    ['a zero-width space', '​'],
+    ['a zero-width space', '\u200B'],
   ])('rejects %s', async (_label, value) => {
     const { user } = setup()
     await user.click(screen.getByRole('button', { name: 'Add your first task' }))
